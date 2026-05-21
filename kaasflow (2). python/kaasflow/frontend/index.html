@@ -808,15 +808,15 @@
         <p class="auth-logo-sub">Finance Manager</p>
       </div>
 
-      <!-- Login Form -->
-      <div id="login-form-wrapper" class="kf-card auth-card">
-        <h2 class="auth-card-title" data-i18n="welcomeBack">Welcome Back</h2>
-        <p class="auth-card-sub" data-i18n="signInToAccount">Sign in to your account</p>
+      <!-- Auth Choices (Initial Screen) -->
+      <div id="auth-choices-wrapper" class="kf-card auth-card">
+        <h2 class="auth-card-title text-center" style="font-size: 1.5rem; margin-bottom: 0.5rem;" data-i18n="welcomeToSamKass">Welcome to SamKass</h2>
+        <p class="auth-card-sub text-center" style="margin-bottom: 1.5rem;" data-i18n="chooseSignInMethod">Choose your sign-in method</p>
 
-        <!-- Google Sign-In Button (Login) -->
+        <!-- Google Sign-In Button Container -->
         <div class="mb-3 d-flex flex-column align-items-center w-100">
           <div id="g_id_onload" 
-               data-client_id="131285004489-qn7lmad609k2kh7k8jt8380uhneg0nr8.apps.googleusercontent.com"
+               data-client_id="1008709235007-vh9u2526ol0haffogibri3kno6rtjejl.apps.googleusercontent.com"
                data-callback="handleGoogleLogin"
                data-auto_prompt="false">
           </div>
@@ -830,7 +830,26 @@
           </div>
         </div>
 
-        <div class="divider-text mb-3"><span data-i18n="orUseEmail">or use email</span></div>
+        <div class="divider-text mb-3"><span>or</span></div>
+
+        <!-- Continue with Email Button -->
+        <button type="button" id="btn-continue-email" class="btn-kf-primary w-100 mb-3" style="min-height: 44px; font-size: 0.95rem;">
+          <i class="fa-solid fa-envelope me-2"></i><span data-i18n="continueWithEmail">Continue with Email</span>
+        </button>
+
+        <div class="auth-switch text-center mt-3">
+          <span data-i18n="haveAccount">Already have an account?</span>
+          <button type="button" class="btn-link" id="show-login-direct" style="font-weight: 700; color: var(--color-primary);">Sign In</button>
+        </div>
+      </div>
+
+      <!-- Login Form -->
+      <div id="login-form-wrapper" class="kf-card auth-card" style="display:none;">
+        <button type="button" class="btn btn-link btn-back-to-choices p-0 mb-3 text-start text-decoration-none" style="color: var(--color-text-muted); font-size: 0.85rem;">
+          <i class="fa-solid fa-arrow-left me-1"></i><span data-i18n="backToOptions">Back to options</span>
+        </button>
+        <h2 class="auth-card-title" data-i18n="welcomeBack">Welcome Back</h2>
+        <p class="auth-card-sub" data-i18n="signInToAccount">Sign in to your account</p>
 
         <form id="login-form" novalidate>
           <div class="mb-3">
@@ -868,22 +887,11 @@
 
       <!-- Register Form -->
       <div id="register-form-wrapper" class="kf-card auth-card" style="display:none;">
+        <button type="button" class="btn btn-link btn-back-to-choices p-0 mb-3 text-start text-decoration-none" style="color: var(--color-text-muted); font-size: 0.85rem;">
+          <i class="fa-solid fa-arrow-left me-1"></i><span data-i18n="backToOptions">Back to options</span>
+        </button>
         <h2 class="auth-card-title" data-i18n="createAccount">Create Account</h2>
         <p class="auth-card-sub" data-i18n="startManagingLoans">Start managing your loans</p>
-
-        <!-- Google Sign-In Button (Register) -->
-        <div class="mb-3 d-flex flex-column align-items-center w-100">
-          <div class="g_id_signin w-100" 
-               data-type="standard" 
-               data-shape="rectangular" 
-               data-theme="outline"
-               data-text="continue_with" 
-               data-size="large" 
-               data-logo_alignment="left">
-          </div>
-        </div>
-
-        <div class="divider-text mb-3"><span data-i18n="orUseEmail">or use email</span></div>
 
         <form id="register-form" novalidate>
           <div class="mb-3">
@@ -932,6 +940,7 @@
             data-i18n="login">Login</button>
         </div>
       </div>
+
 
       <!-- Forgot Password Form -->
       <div id="forgot-password-wrapper" class="kf-card auth-card" style="display:none;">

@@ -1,8 +1,13 @@
 // KaasFlow Auth Logic
 
-const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? 'http://127.0.0.1:5000/api'
-    : '/api';
+let API_BASE = 'https://www.samkass.site/api';
+if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    API_BASE = 'http://127.0.0.1:5000/api';
+} else if (window.location.port === '5500') {
+    API_BASE = `http://${window.location.hostname}:5000/api`;
+} else if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+    API_BASE = window.location.origin + '/api';
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     const tabPassword = document.getElementById('tab-password');
@@ -66,6 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok) {
                 showSuccess('Login successful! Redirecting...');
+                localStorage.setItem('kf_session', JSON.stringify({ token: data.token, user: data.user }));
                 setTimeout(() => {
                     window.location.href = '/'; // Redirect to main app
                 }, 1000);
@@ -125,6 +131,7 @@ async function handleCredentialResponse(response) {
         if (res.ok) {
             successBox.textContent = 'Google login successful! Redirecting...';
             successBox.style.display = 'block';
+            localStorage.setItem('kf_session', JSON.stringify({ token: data.token, user: data.user }));
             setTimeout(() => {
                 window.location.href = '/'; // Redirect to main app
             }, 1000);

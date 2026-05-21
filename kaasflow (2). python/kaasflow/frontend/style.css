@@ -198,9 +198,14 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--color-text-muted);
   margin: 0;
 }
+@keyframes authFadeInScale {
+  0% { opacity: 0; transform: scale(0.97) translateY(10px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
 
 .auth-card {
-  padding: 1.5rem;
+  padding: 2rem 1.75rem;
+  animation: authFadeInScale 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .auth-card-title {

@@ -7,9 +7,14 @@
 'use strict';
 
 // ── CONFIG ──────────────────────────────────────────────────
-const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-  ? 'http://127.0.0.1:5000/api'
-  : '/api';
+let API_BASE = 'https://www.samkass.site/api';
+if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+  API_BASE = 'http://127.0.0.1:5000/api';
+} else if (window.location.port === '5500') {
+  API_BASE = `http://${window.location.hostname}:5000/api`;
+} else if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+  API_BASE = window.location.origin + '/api';
+}
 const LS = {
   session:  'kf_session',
   settings: 'kf_settings',
@@ -62,6 +67,10 @@ const T = {
     exportExcel: 'Export Excel', exportCSV: 'Export CSV',
     clientWiseSummary: 'Client-wise Summary',
     loadingWorkspace: 'Loading your workspace…',
+    welcomeToSamKass: 'Welcome to SamKass',
+    chooseSignInMethod: 'Choose your sign-in method',
+    continueWithEmail: 'Continue with Email',
+    backToOptions: 'Back to options',
     welcomeBack: 'Welcome Back',
     signInToAccount: 'Sign in to your account',
     orUseEmail: 'or use email',
@@ -135,6 +144,10 @@ const T = {
     exportExcel: 'Excel ஏற்றுமதி', exportCSV: 'CSV ஏற்றுமதி',
     clientWiseSummary: 'வாடிக்கையாளர் சுருக்கம்',
     loadingWorkspace: 'உங்கள் பணியிடம் ஏற்றப்படுகிறது…',
+    welcomeToSamKass: 'சாம்காஸ்-க்கு வரவேற்கிறோம்',
+    chooseSignInMethod: 'உள்நுழைவு முறையைத் தேர்ந்தெடுக்கவும்',
+    continueWithEmail: 'மின்னஞ்சல் மூலம் தொடரவும்',
+    backToOptions: 'விருப்பங்களுக்குத் திரும்புக',
     welcomeBack: 'மீண்டும் வருக',
     signInToAccount: 'உங்கள் கணக்கில் உள்நுழைக',
     orUseEmail: 'அல்லது மின்னஞ்சலை பயன்படுத்தவும்',
@@ -514,6 +527,16 @@ function logout() {
 
 // ── INIT ──────────────────────────────────────────────────────
 function init() {
+  // Check if token and email are in query parameters (from magic link redirect)
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('token')) {
+    const token = urlParams.get('token');
+    const email = urlParams.get('email') || '';
+    Store.saveSession({ token: token, user: { email: email, name: email.split('@')[0] } });
+    // Clean query parameters from URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
   const settings = Store.settings();
   applyTheme(settings.theme || 'light');
   applyLang(settings.lang || 'en');
@@ -580,14 +603,14 @@ function handleNotifMarkPending(loanId) {
 }
 
 
-// ── SCREENS ───────────────────────────────────────────────────
 function showAuth() {
   $('#loading-screen').style.display = 'none';
   $('#auth-screen').style.display = '';
   $('#pin-lock-screen').style.display = 'none';
   $('#main-app').style.display = 'none';
-  // Show login form, hide PIN setup and register
-  $('#login-form-wrapper').style.display = '';
+  // Show choices screen, hide others
+  $('#auth-choices-wrapper').style.display = '';
+  $('#login-form-wrapper').style.display = 'none';
   $('#register-form-wrapper').style.display = 'none';
   $('#pin-setup-wrapper').style.display = 'none';
   if ($('#forgot-password-wrapper')) $('#forgot-password-wrapper').style.display = 'none';
@@ -2832,12 +2855,38 @@ function bindGlobal() {
     }
   });
 
+  // Back to choices screen
+  $$('.btn-back-to-choices').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $('#auth-choices-wrapper').style.display = '';
+      $('#login-form-wrapper').style.display = 'none';
+      $('#register-form-wrapper').style.display = 'none';
+      $('#pin-setup-wrapper').style.display = 'none';
+    });
+  });
+
+  // Choice options
+  $('#btn-continue-email')?.addEventListener('click', () => {
+    $('#auth-choices-wrapper').style.display = 'none';
+    $('#register-form-wrapper').style.display = '';
+    $('#login-form-wrapper').style.display = 'none';
+  });
+
+  $('#show-login-direct')?.addEventListener('click', () => {
+    $('#auth-choices-wrapper').style.display = 'none';
+    $('#login-form-wrapper').style.display = '';
+    $('#register-form-wrapper').style.display = 'none';
+  });
+
+  // Toggle between forms
   $('#show-register').addEventListener('click', () => {
+    $('#auth-choices-wrapper').style.display = 'none';
     $('#login-form-wrapper').style.display = 'none';
     $('#register-form-wrapper').style.display = '';
     $('#pin-setup-wrapper').style.display = 'none';
   });
   $('#show-login').addEventListener('click', () => {
+    $('#auth-choices-wrapper').style.display = 'none';
     $('#register-form-wrapper').style.display = 'none';
     $('#login-form-wrapper').style.display = '';
     $('#pin-setup-wrapper').style.display = 'none';
@@ -2846,6 +2895,7 @@ function bindGlobal() {
   // Forgot Password / Magic Link
   $('#show-forgot-password')?.addEventListener('click', (e) => {
     e.preventDefault();
+    $('#auth-choices-wrapper').style.display = 'none';
     $('#login-form-wrapper').style.display = 'none';
     $('#register-form-wrapper').style.display = 'none';
     $('#forgot-password-wrapper').style.display = '';

@@ -14,28 +14,51 @@ from .rate_limiter import check_rate_limit, record_failed_attempt, clear_attempt
 
 auth_bp = Blueprint('pro_auth', __name__)
 
-DATABASE_PATH = os.path.join(os.path.dirname(__file__), '..', 'users.db')
+is_vercel = os.environ.get("VERCEL") == "1"
+if is_vercel:
+    DATABASE_PATH = "/tmp/users.db"
+    # Copy starting users.db to /tmp if it doesn't exist
+    original_db = os.path.join(os.path.dirname(__file__), '..', 'users.db')
+    if not os.path.exists(DATABASE_PATH) and os.path.exists(original_db):
+        import shutil
+        try:
+            shutil.copy2(original_db, DATABASE_PATH)
+            print("Successfully copied users.db to /tmp")
+        except Exception as e:
+            print(f"Failed to copy users.db to /tmp: {e}")
+else:
+    DATABASE_PATH = os.path.join(os.path.dirname(__file__), '..', 'users.db')
 
 def get_db_connection():
+    db_dir = os.path.dirname(DATABASE_PATH)
+    if db_dir and not os.path.exists(db_dir):
+        try:
+            os.makedirs(db_dir, exist_ok=True)
+        except Exception as e:
+            print(f"Failed to create database directory {db_dir}: {e}")
     conn = sqlite3.connect(DATABASE_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
 def init_pro_auth_db():
-    conn = get_db_connection()
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS pro_users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT UNIQUE NOT NULL,
-            password_hash TEXT,
-            google_id TEXT UNIQUE,
-            full_name TEXT,
-            profile_pic TEXT,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    conn.commit()
-    conn.close()
+    try:
+        conn = get_db_connection()
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS pro_users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT UNIQUE NOT NULL,
+                password_hash TEXT,
+                google_id TEXT UNIQUE,
+                full_name TEXT,
+                profile_pic TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        conn.commit()
+        conn.close()
+        print("Database initialized successfully.")
+    except Exception as e:
+        print(f"Error initializing auth database: {e}")
 
 # Initialize the new table
 init_pro_auth_db()
@@ -248,13 +271,21 @@ def magic_link_request():
     </div>
     """
     if send_email(email, subject, body):
-        return jsonify({'message': 'Password reset link sent to your email'})
+        return jsonify({'success': True, 'message': 'Password reset link sent to your email'})
     else:
-        # For development, return the link in the response if email fails
-        return jsonify({
-            'message': 'Email service not configured. For development, here is your link:',
-            'link': magic_link
-        })
+        is_local = any(local in request.host_url for local in ['localhost', '127.0.0.1', '5500'])
+        if is_local:
+            return jsonify({
+                'success': False,
+                'message': 'Email service not configured. For development, here is your link:',
+                'link': magic_link
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Email service is currently unavailable. Please verify configuration or try again later.'
+            }), 500
+
 
 @auth_bp.route('/magic-link/verify', methods=['GET'])
 def magic_link_verify():
@@ -274,12 +305,15 @@ def magic_link_verify():
         user = conn.execute('SELECT * FROM pro_users WHERE email = ?', (email,)).fetchone()
     conn.close()
     
-    # For magic link, we redirect to the dashboard after setting cookies
-    response = make_response("Redirecting...", 302)
-    response.headers['Location'] = '/dashboard' # Or wherever the main app is
-    
     access_token = create_access_token({"sub": user['email'], "id": user['id']})
     refresh_token = create_refresh_token({"sub": user['email'], "id": user['id']})
+    
+    import urllib.parse
+    redirect_url = f"/?token={access_token}&email={urllib.parse.quote(user['email'])}"
+    
+    # For magic link, we redirect to the frontend root with cookies and token params
+    response = make_response("Redirecting...", 302)
+    response.headers['Location'] = redirect_url
     
     response.set_cookie('access_token', access_token, httponly=True, secure=True, samesite='Strict')
     response.set_cookie('refresh_token', refresh_token, httponly=True, secure=True, samesite='Strict')
